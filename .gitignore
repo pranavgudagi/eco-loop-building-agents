@@ -1,0 +1,31 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+
+# Environment
+.env
+
+# EnergyPlus runtime output
+logs/*.csv
+logs/*.sqlite
+logs/*.jsonl
+smoke_output/
+*.eso
+*.err
+*.eio
+*.audit
+*.bnd
+*.mtr
+*.rdd
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
