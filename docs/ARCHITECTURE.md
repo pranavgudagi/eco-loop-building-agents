@@ -16,6 +16,34 @@ Data flows in a closed loop between the LLM (top) and the EnergyPlus
 simulation (bottom); a persistence layer collects everything for the
 dashboard.
 
+```
+   ┌────────────────────────────────────────────────────┐   ┌──────────────┐
+   │             LangGraph agent                        │◄─►│   Groq LLM   │
+   │  Perceive → Reason → Act → Verify → Correct        │   │ Llama 3.1 8B │
+   └────────────────────────────────────────────────────┘   └──────────────┘
+                    ▲             tool calls / results
+                    │
+                    ▼
+   ┌────────────────────────────────────────────────────┐
+   │           MCP-style tool server                    │
+   │   sensors · actuators · files · errors             │
+   └────────────────────────────────────────────────────┘
+                    ▲             read / write
+                    │                                       ┌──────────────┐
+                    ▼                                       │  SQLite +    │
+   ┌────────────────────────────────────────────────────┐   │  CSV logs    │
+   │              Bridge layer                          │──►│              │
+   │  safety wrapper · log summarizer · handle registry │   └──────┬───────┘
+   └────────────────────────────────────────────────────┘          │
+                    ▲                                              ▼
+                    │                                       ┌──────────────┐
+                    ▼                                       │  Streamlit   │
+   ┌────────────────────────────────────────────────────┐   │  dashboard   │
+   │           EnergyPlus simulation                    │   └──────────────┘
+   │  Small office IDF + Bangalore weather EPW          │
+   └────────────────────────────────────────────────────┘
+```
+
 **Layer responsibilities:**
 
 | Layer | Responsibility | Files |
@@ -96,8 +124,11 @@ an auditable log where every decision is self-explaining — the action
 timeline in the dashboard is directly LLM-generated commentary.
 
 Example log entry:
+
+```
 Day 03 09h: cooling_setpoint -> 24.5°C
-reason: Rule 4: occupied hours, holding 24.5°C for modest savings.
+    reason: Rule 4: occupied hours, holding 24.5°C for modest savings.
+```
 
 ---
 
@@ -169,6 +200,17 @@ rolling history, last three actions with reasoning. Approximate size:
 `LLM_TEMPERATURE = 0.2`. Control tasks reward consistency over creativity.
 Higher temperatures produce more diverse but less predictable setpoint
 choices.
+
+### 3.7 Empirically-derived rule values
+
+The specific setpoint values in each rule were derived by iterative testing.
+Multiple prompt variants were tested (aggressive setbacks to 27°C, moderate
+setbacks to 25°C, conservative nudges to 24.5°C). We observed a nonlinear
+cliff in the energy-comfort tradeoff around 25.5°C setpoint: values above
+this threshold produced 15-53% energy savings but caused comfort violations
+to double or triple. The chosen values keep the system on the safe side of
+this cliff, delivering a Pareto improvement rather than trading comfort for
+energy.
 
 ---
 
@@ -337,18 +379,20 @@ weather. 15-minute simulation timestep, 1-hour LLM decision interval,
 
 | Metric | Baseline | AI-controlled | Delta |
 |---|---|---|---|
-| Cooling energy (W·steps) | 758,027 | 709,332 | **−6.4%** |
-| Comfort band (21–25°C, occupied) | 79.8% | 80.4% | **+0.6 pts** |
-| Zone-timesteps > 25°C (occupied) | 88 | 85 | −3 |
+| Cooling energy (kWh, 7 days) | 189.5 | 178.8 | **−5.7%** |
+| Comfort band (21–25°C, occupied) | 79.8% | **85.2%** | **+5.4 pts** |
+| Zone-timesteps > 25°C (occupied) | 88 | 59 | **−33%** |
 | Zone-timesteps < 21°C (occupied) | 21 | 21 | 0 |
 | LLM errors | — | 0 / 216 | — |
 | Agent errors | — | 0 / 216 | — |
-| Wall time | 4 s | 928 s | — |
+| Wall time | 4 s | 748 s | — |
 | API cost | $0 | $0 | — |
 
 **Key result:** the AI beat the fixed-schedule baseline on both energy
-and comfort simultaneously. No test-driven baseline tuning was required
-to achieve this — the baseline is the reference IDF's default behaviour.
+and comfort simultaneously, with a 33% reduction in comfort violations.
+No test-driven baseline tuning was required to achieve this — the
+baseline is the reference IDF's default behaviour. This is a genuine
+Pareto improvement: better on both axes at once.
 
 ---
 
@@ -375,6 +419,12 @@ values.
 We mitigate with numbered rules and safety clamping; a larger model
 (Llama 3.3 70B) would give better zero-shot reasoning at higher latency.
 
+**LLM stochasticity.** Even at temperature 0.2, LLM outputs vary between
+runs. Observed run-to-run variance of ±2-3 percentage points on energy
+savings for the same prompt. Production deployment would either use
+deterministic rules extracted from the LLM's decisions, or a larger model
+with more stable behaviour.
+
 **7-day evaluation horizon.** Longer horizons (month, season) would
 strengthen the reliability claim; the architecture is unchanged, only the
 `SIMULATION_END_DAY` in `config.py`.
@@ -396,3 +446,5 @@ for future error-recovery workflows.
 - Larger LLM (Llama 3.3 70B) A/B comparison
 - IDF error-recovery workflow: LLM inspects `.err`, proposes IDF edits,
   reruns simulation (uses File and Error tool groups already defined)
+- Predictive comfort-risk signal to enable safe operation past 25°C setpoint
+- Ensemble decisions (average N LLM samples) to reduce stochasticity
