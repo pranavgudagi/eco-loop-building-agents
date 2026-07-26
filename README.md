@@ -214,9 +214,3 @@ eco-loop-building-agents/
 | 4. System architecture document | `docs/ARCHITECTURE.md` |
 | 5. PoC demonstration video | Linked in the presentation |
 
-## Credits
-
-Built for the Honeywell Technologies Campus Connect Hackathon 2026.
-
-Uses EnergyPlus (US DoE, NREL, LBL), open weather data from ISHRAE and the EnergyPlus weather archive, and Llama 3.1 8B via Groq.
-
