@@ -1,5 +1,17 @@
 # Eco-Loop Building Agents
+<div align="center">
 
+# Eco-Loop Building Agents
+
+### 🎥 Project Demo
+
+<a href="https://drive.google.com/file/d/1qFXqSriZ1IW5l15QUA5bSpt4l-oDAZln/view?usp=sharing">
+  <img src="assets/demo-thumbnail.png" alt="Watch Demo" width="900">
+</a>
+
+<p><b>▶ Click the image above to watch the full project demo.</b></p>
+
+</div>
 Autonomous LLM-driven HVAC control for smart buildings. A closed-loop agent reads live simulation state, reasons about occupancy, comfort, and outdoor conditions, and injects setpoints back into an EnergyPlus simulation via Model Context Protocol tools — all without a human in the loop.
 
 Built for the **Honeywell Technologies Campus Connect Hackathon 2026**, Problem Statement 1: *AI-Powered Autonomous Smart Building Optimization*.
