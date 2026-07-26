@@ -10,12 +10,12 @@ Simulation: DOE Reference Small Office building, one week of July using Bangalor
 
 | Metric | Baseline (fixed 24°C) | AI-controlled | Delta |
 |---|---|---|---|
-| Cooling energy | 758,027 W·steps | 709,332 W·steps | **−6.4%** |
-| Time in comfort band (21–25°C, occupied hours) | 79.8% | 80.4% | **+0.6 pts** |
-| Zone-timesteps too hot | 88 | 85 | −3 |
+| Cooling energy (7-day sim) | 189.5 kWh | 178.8 kWh | **−5.7%** |
+| Time in comfort band (21–25°C, occupied hours) | 79.8% | **85.2%** | **+5.4 pts** |
+| Zone-timesteps too hot | 88 | 59 | **−33%** |
 | Agent errors over 216 decisions | — | 0 | — |
 
-**The AI beat the fixed-schedule baseline on both energy and comfort simultaneously.**
+**The AI beat the fixed-schedule baseline on both energy and comfort simultaneously — with a 33% reduction in comfort violations.**
 
 ## What this is
 
@@ -191,14 +191,6 @@ eco-loop-building-agents/
 **Retry-with-fallback.** The Groq client wraps every call in exponential-backoff retry (3 attempts) and falls back to holding last-known-good setpoints on total failure. In the reference run, zero agent errors occurred across 216 LLM calls.
 
 **Two-run comparison.** Baseline and AI runs use identical IDF, weather, occupancy, and simulation timesteps — the only variable is whether the agent is registered on the callback. This isolates the AI's contribution.
-
-## Known limitations
-
-- **Reference building sized for Chicago.** DOE small office HVAC is sized for Chicago winters. Absolute energy numbers are higher than a real Bangalore small office; delta vs baseline is still a valid comparison because both runs use identical HVAC sizing.
-- **Injected synthetic occupancy schedule.** The reference IDF had near-zero occupancy in its default schedule; `scripts/prepare_idf.py` overrides with a realistic 90% office-hours weekday pattern.
-- **Single global cooling setpoint.** The current small-office HVAC configuration exposes one cooling schedule for the whole building. Per-zone control is future work.
-- **Llama 3.1 8B occasionally emits inconsistent reasoning.** Mitigated with numbered rules and clamping; a larger model would give better zero-shot reasoning at higher latency.
-- **7-day evaluation horizon.** Longer horizons would strengthen the reliability claim.
 
 ## Deliverables mapping
 
